@@ -9,33 +9,108 @@ This project showcases **end-to-end full-stack development** with **cutting-edge
 ### Key Technical Achievements
 
 - **🔧 Full-Stack Development**: Complete web application with Python backend, SQLAlchemy ORM, and responsive frontend
+- **🗄️ Database Design**: Normalized relational schema with complex relationships and performance optimization
+- **🔐 Security Architecture**: Role-based access control with granular permissions and secure authentication
+- **🏗️ Modular Architecture**: Blueprint-based organization with clean separation of concerns
 - **🤖 LLM Integration**: Production-ready AI service integration with Google Gemini API
 - **⚡ Prompt Engineering**: Advanced prompt design for different use cases (accessibility vs. engagement)
 - **🛡️ Error Handling**: Robust fallback mechanisms and graceful degradation strategies
 - **📊 Evaluation Infrastructure**: Comprehensive testing suite for AI functionality
-- **🏗️ Scalable Architecture**: Service-oriented design with clean separation of concerns
+- **💾 Resource Management**: Automatic file cleanup and multi-variant image storage optimization
 
 ## Core Features & Technical Implementation
 
-### 1. AI-Powered Accessibility System
+### 1. Database Architecture & Performance
+- **Normalized Schema Design**: Complex many-to-many relationships with proper foreign key constraints
+- **Query Optimization**: Strategic indexing and efficient relationship loading strategies
+- **Data Integrity**: Referential integrity with cascade operations and constraint validation
+- **Performance Monitoring**: Optimized queries for large datasets and complex joins
+
+### 2. Security & Access Control
+- **Role-Based Access Control**: Hierarchical permission system with granular access controls
+- **Secure Authentication**: Password hashing, email confirmation, and session management
+- **Authorization Decorators**: Clean permission enforcement with Flask decorators
+- **Audit Trail**: Comprehensive logging and user activity tracking
+
+### 3. AI-Powered Accessibility System
 - **Automatic Alt Text Generation**: WCAG-compliant accessibility features using LLM vision models
 - **Production-Ready Integration**: Seamless AI service integration with comprehensive error handling
 - **Fallback Mechanisms**: Graceful degradation when AI services are unavailable
 
-### 2. Intelligent Content Generation
+### 4. Intelligent Content Generation
 - **Advanced Prompt Engineering**: Specialized prompts for different content types and use cases
 - **User Experience Optimization**: AI-generated content that enhances engagement without disrupting workflow
 - **Content Quality Control**: Built-in validation and regeneration capabilities
 
-### 3. Full-Stack Architecture
+### 5. Full-Stack Architecture
 - **Backend**: Python/Flask with SQLAlchemy ORM, user authentication, and API endpoints
 - **Frontend**: Responsive web interface with Bootstrap and modern JavaScript
 - **Database**: SQLite with comprehensive data modeling and relationships
 - **Search**: Full-text search implementation with Whoosh integration
+- **File Management**: Multi-variant image storage with automatic cleanup and optimization
 
 ## Design Decisions & Architecture
 
-### 1. Service-Oriented Architecture for AI Integration
+### 1. Database Schema Design & Normalization
+
+**Decision**: Implemented a normalized relational database schema with proper foreign key relationships and many-to-many associations
+
+**Rationale**: 
+- **Data Integrity**: Foreign key constraints ensure referential integrity across all relationships
+- **Scalability**: Normalized design prevents data duplication and supports efficient queries
+- **Flexibility**: Many-to-many relationships (User-Photo follows, Photo-Tag associations) support complex social features
+- **Performance**: Strategic indexing on frequently queried fields (timestamps, usernames, emails)
+
+**Implementation**:
+```python
+# Many-to-many relationship tables for social features
+roles_permissions = db.Table('roles_permissions',
+    db.Column('role_id', db.Integer, db.ForeignKey('role.id')),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'))
+)
+
+tagging = db.Table('tagging',
+    db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+)
+
+# Self-referential relationship for comment replies
+class Comment(db.Model):
+    replied_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+    replies = db.relationship('Comment', back_populates='replied', cascade='all')
+```
+
+**Healthcare Relevance**: This normalized approach mirrors how healthcare systems manage complex relationships between patients, providers, treatments, and medical records while maintaining data integrity and audit trails.
+
+### 2. Role-Based Access Control (RBAC) System
+
+**Decision**: Implemented a flexible RBAC system with granular permissions and role inheritance
+
+**Rationale**:
+- **Security**: Granular permission control prevents unauthorized access to sensitive operations
+- **Scalability**: Easy to add new roles and permissions as the system grows
+- **Maintainability**: Centralized permission logic with decorator-based enforcement
+- **Flexibility**: Support for different user types (Locked, User, Moderator, Administrator)
+
+**Implementation**:
+```python
+# Hierarchical role system with permission mapping
+roles_permissions_map = {
+    'Locked': ['FOLLOW', 'COLLECT'],
+    'User': ['FOLLOW', 'COLLECT', 'COMMENT', 'UPLOAD'],
+    'Moderator': ['FOLLOW', 'COLLECT', 'COMMENT', 'UPLOAD', 'MODERATE'],
+    'Administrator': ['FOLLOW', 'COLLECT', 'COMMENT', 'UPLOAD', 'MODERATE', 'ADMINISTER']
+}
+
+# Decorator-based permission enforcement
+@permission_required('UPLOAD')
+def upload():
+    # Upload logic here
+```
+
+**Healthcare Relevance**: Similar to how healthcare systems implement role-based access for different staff levels (nurses, doctors, administrators) with appropriate data access controls.
+
+### 3. Service-Oriented Architecture for AI Integration
 
 **Decision**: Isolated LLM functionality in a dedicated service layer (`albumy/services/llm_service.py`)
 
@@ -65,7 +140,72 @@ def generate_sassy_description_from_file(file_path: str) -> str:
 
 **Why This Matters for Healthcare**: This architecture mirrors how healthcare systems need to integrate AI services (like diagnostic tools or automated coding) while maintaining system reliability and patient safety.
 
-### 2. Graceful Degradation Strategy
+### 4. Blueprint-Based Modular Architecture
+
+**Decision**: Organized application logic into modular blueprints for maintainability and scalability
+
+**Rationale**:
+- **Separation of Concerns**: Each blueprint handles specific functionality (auth, main, user, admin, ajax)
+- **Maintainability**: Easier to locate and modify specific features
+- **Team Development**: Multiple developers can work on different blueprints simultaneously
+- **Testing**: Isolated testing of individual application modules
+- **Scalability**: Easy to add new features without affecting existing code
+
+**Implementation**:
+```python
+# Modular blueprint structure
+from albumy.blueprints.admin import admin_bp
+from albumy.blueprints.ajax import ajax_bp
+from albumy.blueprints.auth import auth_bp
+from albumy.blueprints.main import main_bp
+from albumy.blueprints.user import user_bp
+
+# Clean separation of concerns
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    # Authentication logic
+
+@main_bp.route('/upload', methods=['GET', 'POST'])
+@permission_required('UPLOAD')
+def upload():
+    # Upload logic
+```
+
+**Healthcare Relevance**: Similar to how healthcare systems organize modules for patient management, billing, clinical workflows, and reporting while maintaining clean interfaces between components.
+
+### 5. Database Event Listeners & Resource Management
+
+**Decision**: Implemented automatic cleanup of associated files when database records are deleted
+
+**Rationale**:
+- **Data Consistency**: Prevents orphaned files when database records are deleted
+- **Storage Management**: Automatic cleanup prevents disk space waste
+- **Maintainability**: Centralized cleanup logic in model event listeners
+- **Reliability**: Ensures file system stays in sync with database state
+
+**Implementation**:
+```python
+@db.event.listens_for(User, 'after_delete', named=True)
+def delete_avatars(**kwargs):
+    target = kwargs['target']
+    for filename in [target.avatar_s, target.avatar_m, target.avatar_l, target.avatar_raw]:
+        if filename is not None:
+            path = os.path.join(current_app.config['AVATARS_SAVE_PATH'], filename)
+            if os.path.exists(path):
+                os.remove(path)
+
+@db.event.listens_for(Photo, 'after_delete', named=True)
+def delete_photos(**kwargs):
+    target = kwargs['target']
+    for filename in [target.filename, target.filename_s, target.filename_m]:
+        path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+        if os.path.exists(path):
+            os.remove(path)
+```
+
+**Healthcare Relevance**: Critical for healthcare systems where patient data deletion must trigger cleanup of associated medical images, documents, and audit logs to maintain compliance and data privacy.
+
+### 6. Graceful Degradation Strategy
 
 **Decision**: Implement comprehensive fallback mechanisms for LLM service failures
 
@@ -152,7 +292,84 @@ Don't be too formal - be casual and entertaining!"""
 
 ## Technical Challenges & Solutions
 
-### Challenge 1: Production-Ready LLM Integration
+### Challenge 1: Database Relationship Complexity & Performance
+
+**Problem**: Managing complex many-to-many relationships and self-referential associations while maintaining query performance and data integrity.
+
+**Initial Approach**: Simple foreign key relationships without proper indexing or relationship optimization
+
+**Challenges Encountered**:
+- Slow queries on large datasets due to missing indexes
+- N+1 query problems when loading related objects
+- Complex join operations causing performance bottlenecks
+- Data integrity issues with cascade operations
+
+**Solution**: Optimized database design with strategic indexing and relationship loading strategies
+
+```python
+# Strategic indexing on frequently queried fields
+class User(db.Model):
+    username = db.Column(db.String(20), unique=True, index=True)
+    email = db.Column(db.String(254), unique=True, index=True)
+
+class Photo(db.Model):
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+# Optimized relationship loading with lazy='joined'
+class Follow(db.Model):
+    follower = db.relationship('User', foreign_keys=[follower_id], 
+                              back_populates='following', lazy='joined')
+    followed = db.relationship('User', foreign_keys=[followed_id], 
+                              back_populates='followers', lazy='joined')
+
+# Efficient query patterns
+def get_user_feed(user_id):
+    return Photo.query.join(Follow, Follow.followed_id == Photo.author_id)\
+                     .filter(Follow.follower_id == user_id)\
+                     .order_by(Photo.timestamp.desc())
+```
+
+**Healthcare Application**: Similar to how healthcare systems optimize queries for patient records, medical histories, and provider relationships while maintaining HIPAA compliance and audit trails.
+
+### Challenge 2: File Management & Storage Optimization
+
+**Problem**: Efficiently managing multiple image variants (thumbnails, medium, full-size) while ensuring proper cleanup and storage optimization.
+
+**Initial Approach**: Storing only original images without variants or cleanup mechanisms
+
+**Challenges Encountered**:
+- Large storage requirements for high-resolution images
+- Slow page loading due to unoptimized image sizes
+- Orphaned files consuming disk space
+- No automatic cleanup when records are deleted
+
+**Solution**: Multi-variant image storage with automatic cleanup and optimization
+
+```python
+# Multi-variant image storage
+class Photo(db.Model):
+    filename = db.Column(db.String(64))      # Original
+    filename_s = db.Column(db.String(64))    # Small (400px)
+    filename_m = db.Column(db.String(64))    # Medium (800px)
+
+# Automatic cleanup on deletion
+@db.event.listens_for(Photo, 'after_delete', named=True)
+def delete_photos(**kwargs):
+    target = kwargs['target']
+    for filename in [target.filename, target.filename_s, target.filename_m]:
+        path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+        if os.path.exists(path):
+            os.remove(path)
+
+# Image processing with size optimization
+def resize_image(f, filename, size):
+    # Generate optimized variants for different use cases
+    pass
+```
+
+**Healthcare Relevance**: Similar to how medical imaging systems manage DICOM files with multiple resolutions and automatic cleanup for compliance and storage efficiency.
+
+### Challenge 3: Production-Ready LLM Integration
 
 **Problem**: Integrating external AI services into a production web application requires robust error handling, rate limiting, and fallback strategies.
 
@@ -215,7 +432,46 @@ def generate_alt_text(image_data: bytes) -> str:
 
 **Healthcare Application**: This pattern is essential for healthcare AI integration, where system reliability directly impacts patient care and regulatory compliance.
 
-### Challenge 2: Image Processing and Memory Management
+### Challenge 4: Authentication & Authorization Security
+
+**Problem**: Implementing secure user authentication and role-based authorization while maintaining user experience and system security.
+
+**Initial Approach**: Simple password storage and basic permission checks
+
+**Challenges Encountered**:
+- Insecure password storage without proper hashing
+- No email confirmation system for account validation
+- Inadequate session management and security
+- No granular permission system for different user types
+
+**Solution**: Comprehensive security implementation with Flask-Login and custom decorators
+
+```python
+# Secure password hashing with Werkzeug
+def set_password(self, password):
+    self.password_hash = generate_password_hash(password)
+
+def validate_password(self, password):
+    return check_password_hash(self.password_hash, password)
+
+# Email confirmation system
+confirmed = db.Column(db.Boolean, default=False)
+
+# Role-based permission system
+def can(self, permission_name):
+    permission = Permission.query.filter_by(name=permission_name).first()
+    return permission is not None and self.role is not None and permission in self.role.permissions
+
+# Decorator-based permission enforcement
+@permission_required('UPLOAD')
+@confirm_required
+def upload():
+    # Upload logic with security checks
+```
+
+**Healthcare Relevance**: Critical for healthcare systems where patient data access must be strictly controlled based on user roles and permissions, with audit trails for compliance.
+
+### Challenge 5: Image Processing and Memory Management
 
 **Problem**: Large image files could cause memory issues during AI processing, especially with multiple concurrent uploads.
 
@@ -258,7 +514,7 @@ def generate_alt_text_from_file(file_path: str) -> str:
 
 **Healthcare Relevance**: Medical imaging applications require similar memory management and validation strategies for handling large DICOM files and medical images.
 
-### Challenge 3: Testing AI Integration
+### Challenge 6: Testing AI Integration
 
 **Problem**: Testing AI services requires mocking external API calls and validating AI outputs, which is complex and unreliable.
 
