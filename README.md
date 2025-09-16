@@ -238,7 +238,7 @@ except Exception as e:
 
 **Healthcare Relevance**: This approach is critical in healthcare applications where AI services (like automated coding or diagnostic assistance) must never compromise patient care or system availability.
 
-### 3. Database Schema Enhancement for AI Features
+### 7. Database Schema Enhancement for AI Features
 
 **Decision**: Added `alt_text` field to the Photo model to store AI-generated accessibility content
 
@@ -261,7 +261,7 @@ class Photo(db.Model):
 
 **Healthcare Application**: Similar to how healthcare systems store AI-generated clinical notes, diagnostic suggestions, or automated coding results for review and audit purposes.
 
-### 4. Advanced Prompt Engineering Strategy
+### 8. Advanced Prompt Engineering Strategy
 
 **Decision**: Use specialized prompts for different AI use cases with character limits and quality validation
 
@@ -576,7 +576,7 @@ class LLMServiceTestCase(BaseTestCase):
 
 **Healthcare Application**: Healthcare AI systems require similar comprehensive testing strategies to ensure reliability and regulatory compliance.
 
-### Challenge 4: User Experience Integration
+### Challenge 7: User Experience Integration
 
 **Problem**: Integrating AI features seamlessly into existing user workflows without disrupting the user experience.
 
